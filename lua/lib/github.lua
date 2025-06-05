@@ -240,7 +240,7 @@ function Github.update_events()
 		return load_cache()
 	end
 
-	local username = user_vars.github and user_vars.github.username or "linuxmobile"
+	local username = user_vars.github and user_vars.github.username or "SrwR16"
 	local events = fetch_github_events(username)
 	local current_time = os.time()
 

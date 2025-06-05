@@ -1,0 +1,111 @@
+@use "../abstracts" as *;
+
+window.PowerControl {
+  background: transparent;
+
+  > eventbox > box.power-control-container {
+    background-color: $surface0;
+    border-radius: to-rem(20px);
+    border: to-rem(1px) solid gtkalpha($border, 0.2);
+    padding: to-rem(16px);
+    min-width: to-rem(280px);
+
+    .power-control-header {
+      margin-bottom: to-rem(16px);
+
+      .power-control-title {
+        color: $text;
+        font-size: to-rem(16px);
+        font-weight: 600;
+        text-align: center;
+      }
+    }
+
+    .power-options-grid {
+      .power-option-button {
+        padding: to-rem(16px) to-rem(12px);
+        border-radius: to-rem(16px);
+        background: linear-gradient(145deg, gtkalpha($surface1, 0.8), gtkalpha($surface1, 0.6));
+        border: to-rem(1px) solid gtkalpha($border, 0.1);
+        transition: all 200ms cubic-bezier(0.4, 0, 0.2, 1);
+        min-width: to-rem(60px);
+
+        &:hover {
+          transform: translateY(to-rem(-2px));
+          box-shadow: 0 to-rem(4px) to-rem(12px) gtkalpha($crust, 0.4);
+        }
+
+        &:active {
+          transform: translateY(0);
+          box-shadow: 0 2px 8px gtkalpha($crust, 0.3), inset 0 2px 4px gtkalpha($crust, 0.2);
+        }
+
+        box {
+          icon {
+            color: $subtext1;
+            transition: color 200ms ease;
+          }
+
+          .power-option-label {
+            color: $text;
+            font-size: to-rem(11px);
+            font-weight: 500;
+            transition: color 200ms ease;
+          }
+        }
+      }
+
+      .power-shutdown-button:hover {
+        background: linear-gradient(145deg, gtkalpha($red, 0.2), gtkalpha($red, 0.1));
+        border-color: gtkalpha($red, 0.3);
+
+        box icon {
+          color: $red;
+        }
+        box .power-option-label {
+          color: $red;
+        }
+      }
+
+      .power-reboot-button:hover {
+        background: linear-gradient(145deg, gtkalpha($yellow, 0.2), gtkalpha($yellow, 0.1));
+        border-color: gtkalpha($yellow, 0.3);
+
+        box icon {
+          color: $yellow;
+        }
+        box .power-option-label {
+          color: $yellow;
+        }
+      }
+
+      .power-suspend-button:hover {
+        background: linear-gradient(145deg, gtkalpha($blue, 0.2), gtkalpha($blue, 0.1));
+        border-color: gtkalpha($blue, 0.3);
+
+        box icon {
+          color: $blue;
+        }
+        box .power-option-label {
+          color: $blue;
+        }
+      }
+
+      .power-logout-button:hover {
+        background: linear-gradient(145deg, gtkalpha($mauve, 0.2), gtkalpha($mauve, 0.1));
+        border-color: gtkalpha($mauve, 0.3);
+
+        box icon {
+          color: $mauve;
+        }
+        box .power-option-label {
+          color: $mauve;
+        }
+      }
+    }
+  }
+}
+
+window.MenuOverlay {
+  background: gtkalpha($crust, 0.1);
+}

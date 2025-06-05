@@ -13,6 +13,7 @@ local Debug = require("lua.lib.debug")
 local Workspaces = require("lua.widgets.Workspaces")
 local ActiveClient = require("lua.widgets.ActiveClient")
 local Vitals = require("lua.widgets.Vitals")
+local MenuManager = require("lua.lib.menu-manager")
 
 local map = require("lua.lib.common").map
 
@@ -23,6 +24,7 @@ local battery_window = nil
 local display_control_window = nil
 local sysinfo_window = nil
 local media_window = nil
+local power_window = nil
 
 local function SysTray()
 	local tray = Tray.get_default()
@@ -48,7 +50,6 @@ end
 
 local function Media(monitor)
 	local MEDIA_HIDE_DELAY = 30
-	local window_visible = Variable(false)
 	local hover_state = Variable(false)
 	local is_destroyed = false
 	local hide_timer = nil
@@ -174,20 +175,15 @@ local function Media(monitor)
 		if is_destroyed then
 			return
 		end
+		MenuManager.toggle("media")
+	end
 
-		if window_visible:get() and media_window then
-			media_window:hide()
-			window_visible:set(false)
-		else
-			if not media_window then
-				local MediaControlWindow = require("lua.windows.MediaControl")
-				media_window = MediaControlWindow.new(monitor)
-			end
-			if media_window then
-				media_window:show_all()
-				window_visible:set(true)
-			end
+	local function setup_media_menu()
+		if not media_window then
+			local MediaControlWindow = require("lua.windows.MediaControl")
+			media_window = MediaControlWindow.new(monitor)
 		end
+		MenuManager.register("media", media_window, toggle_media_window)
 	end
 
 	return Widget.Box({
@@ -209,7 +205,6 @@ local function Media(monitor)
 				end
 				safe_destroy_window()
 				player_info:drop()
-				window_visible:drop()
 				hover_state:drop()
 			end)
 		end,
@@ -218,7 +213,10 @@ local function Media(monitor)
 			hexpand = true,
 			vexpand = true,
 			above_child = true,
-			on_button_press_event = toggle_media_window,
+			on_button_press_event = function()
+				setup_media_menu()
+				toggle_media_window()
+			end,
 			on_enter_notify_event = function()
 				if not is_destroyed then
 					hover_state:set(true)
@@ -286,24 +284,25 @@ local function GithubActivity()
 	local window_visible = Variable(false)
 
 	local function toggle_github_window()
-		if window_visible:get() and github_window then
-			github_window:hide()
-			window_visible:set(false)
-		else
-			if not github_window then
-				local GithubWindow = require("lua.windows.Github")
-				github_window = GithubWindow.new()
-			end
-			github_window:show_all()
-			window_visible:set(true)
+		MenuManager.toggle("github")
+	end
+
+	local function setup_github_menu()
+		if not github_window then
+			local GithubWindow = require("lua.windows.Github")
+			github_window = GithubWindow.new()
 		end
+		MenuManager.register("github", github_window, toggle_github_window)
 	end
 
 	return Widget.Button({
 		class_name = "github-button",
-		on_clicked = toggle_github_window,
+		on_clicked = function()
+			setup_github_menu()
+			toggle_github_window()
+		end,
 		child = Widget.Icon({
-			icon = os.getenv("PWD") .. "/icons/github-symbolic.svg",
+			icon = "../../icons/github-symbolic.svg",
 			tooltip_text = "GitHub Activity",
 		}),
 	})
@@ -316,24 +315,23 @@ local function AudioControl(monitor)
 	local window_visible = Variable(false)
 
 	local function toggle_audio_window()
-		if window_visible:get() and audio_window then
-			audio_window:hide()
-			window_visible:set(false)
-		else
-			if not audio_window then
-				local AudioControlWindow = require("lua.windows.AudioControl")
-				audio_window = AudioControlWindow.new(monitor)
-			end
-			if audio_window then
-				audio_window:show_all()
-			end
-			window_visible:set(true)
+		MenuManager.toggle("audio")
+	end
+
+	local function setup_audio_menu()
+		if not audio_window then
+			local AudioControlWindow = require("lua.windows.AudioControl")
+			audio_window = AudioControlWindow.new(monitor)
 		end
+		MenuManager.register("audio", audio_window, toggle_audio_window)
 	end
 
 	return Widget.Button({
 		class_name = "audio-button",
-		on_clicked = toggle_audio_window,
+		on_clicked = function()
+			setup_audio_menu()
+			toggle_audio_window()
+		end,
 		Widget.Box({
 			spacing = 10,
 			Widget.Icon({
@@ -361,24 +359,23 @@ local function DisplayControl(monitor)
 	local window_visible = Variable(false)
 
 	local function toggle_display_window()
-		if window_visible:get() and display_control_window then
-			display_control_window:hide()
-			window_visible:set(false)
-		else
-			if not display_control_window then
-				local DisplayControlWindow = require("lua.windows.DisplayControl")
-				display_control_window = DisplayControlWindow.new(monitor)
-			end
-			if display_control_window then
-				display_control_window:show_all()
-			end
-			window_visible:set(true)
+		MenuManager.toggle("display")
+	end
+
+	local function setup_display_menu()
+		if not display_control_window then
+			local DisplayControlWindow = require("lua.windows.DisplayControl")
+			display_control_window = DisplayControlWindow.new(monitor)
 		end
+		MenuManager.register("display", display_control_window, toggle_display_window)
 	end
 
 	return Widget.Button({
 		class_name = "display-button",
-		on_clicked = toggle_display_window,
+		on_clicked = function()
+			setup_display_menu()
+			toggle_display_window()
+		end,
 		child = Widget.Icon({
 			icon = "video-display-symbolic",
 			tooltip_text = "Display Settings",
@@ -391,27 +388,48 @@ local function DisplayControl(monitor)
 	})
 end
 
+local function PowerControl(monitor)
+	local function toggle_power_window()
+		MenuManager.toggle("power")
+	end
+
+	local function setup_power_menu()
+		if not power_window then
+			local PowerControlWindow = require("lua.windows.PowerControl")
+			power_window = PowerControlWindow.new(monitor)
+		end
+		MenuManager.register("power", power_window, toggle_power_window)
+	end
+
+	return Widget.Button({
+		class_name = "power-button",
+		on_clicked = function()
+			setup_power_menu()
+			toggle_power_window()
+		end,
+		child = Widget.Icon({
+			icon = "system-shutdown-symbolic",
+			tooltip_text = "Power Options",
+		}),
+	})
+end
+
 local function Wifi(monitor)
 	local network = Network.get_default()
-	local window_visible = Variable(false)
 	local wifi_state = Variable.derive({ bind(network, "wifi") }, function(wifi)
 		return wifi
 	end)
 
 	local function toggle_network_window()
-		if window_visible:get() and network_window then
-			network_window:hide()
-			window_visible:set(false)
-		else
-			if not network_window then
-				local NetworkWindow = require("lua.windows.Network")
-				network_window = NetworkWindow.new(monitor)
-			end
-			if network_window then
-				network_window:show_all()
-			end
-			window_visible:set(true)
+		MenuManager.toggle("network")
+	end
+
+	local function setup_network_menu()
+		if not network_window then
+			local NetworkWindow = require("lua.windows.Network")
+			network_window = NetworkWindow.new(monitor)
 		end
+		MenuManager.register("network", network_window, toggle_network_window)
 	end
 
 	return Widget.Button({
@@ -419,7 +437,10 @@ local function Wifi(monitor)
 		visible = bind(wifi_state):as(function(v)
 			return v ~= nil
 		end),
-		on_clicked = toggle_network_window,
+		on_clicked = function()
+			setup_network_menu()
+			toggle_network_window()
+		end,
 		bind(wifi_state):as(function(w)
 			return Widget.Icon({
 				tooltip_text = bind(w, "ssid"):as(tostring),
@@ -429,7 +450,6 @@ local function Wifi(monitor)
 		end),
 		setup = function(self)
 			self:hook(self, "destroy", function()
-				window_visible:drop()
 				wifi_state:drop()
 			end)
 		end,
@@ -438,31 +458,29 @@ end
 
 local function BatteryLevel(monitor)
 	local bat = Battery.get_default()
-	local window_visible = Variable(false)
 	local battery_state = Variable.derive({ bind(bat, "is-present") }, function(present)
 		return present
 	end)
 
 	local function toggle_battery_window()
-		if window_visible:get() and battery_window then
-			battery_window:hide()
-			window_visible:set(false)
-		else
-			if not battery_window then
-				local BatteryWindow = require("lua.windows.Battery")
-				battery_window = BatteryWindow.new(monitor)
-			end
-			if battery_window then
-				battery_window:show_all()
-			end
-			window_visible:set(true)
+		MenuManager.toggle("battery")
+	end
+
+	local function setup_battery_menu()
+		if not battery_window then
+			local BatteryWindow = require("lua.windows.Battery")
+			battery_window = BatteryWindow.new(monitor)
 		end
+		MenuManager.register("battery", battery_window, toggle_battery_window)
 	end
 
 	return Widget.Button({
 		class_name = "battery-button",
 		visible = bind(battery_state),
-		on_clicked = toggle_battery_window,
+		on_clicked = function()
+			setup_battery_menu()
+			toggle_battery_window()
+		end,
 		Widget.Box({
 			Widget.Icon({
 				icon = bind(bat, "battery-icon-name"),
@@ -476,7 +494,6 @@ local function BatteryLevel(monitor)
 		}),
 		setup = function(self)
 			self:hook(self, "destroy", function()
-				window_visible:drop()
 				battery_state:drop()
 			end)
 		end,
@@ -484,24 +501,19 @@ local function BatteryLevel(monitor)
 end
 
 local function SysInfo(monitor)
-	local window_visible = Variable(false)
 	local user_vars = require("user-variables")
 	local profile_pic_path = user_vars.profile and user_vars.profile.picture or nil
 
 	local function toggle_sysinfo_window()
-		if window_visible:get() and sysinfo_window then
-			sysinfo_window:hide()
-			window_visible:set(false)
-		else
-			if not sysinfo_window then
-				local SysInfoWindow = require("lua.windows.SysInfo")
-				sysinfo_window = SysInfoWindow.new(monitor)
-			end
-			if sysinfo_window then
-				sysinfo_window:show_all()
-			end
-			window_visible:set(true)
+		MenuManager.toggle("sysinfo")
+	end
+
+	local function setup_sysinfo_menu()
+		if not sysinfo_window then
+			local SysInfoWindow = require("lua.windows.SysInfo")
+			sysinfo_window = SysInfoWindow.new(monitor)
 		end
+		MenuManager.register("sysinfo", sysinfo_window, toggle_sysinfo_window)
 	end
 
 	local child
@@ -520,13 +532,11 @@ local function SysInfo(monitor)
 
 	return Widget.Button({
 		class_name = "sysinfo-button",
-		on_clicked = toggle_sysinfo_window,
-		child = child,
-		setup = function(self)
-			self:hook(self, "destroy", function()
-				window_visible:drop()
-			end)
+		on_clicked = function()
+			setup_sysinfo_menu()
+			toggle_sysinfo_window()
 		end,
+		child = child,
 	})
 end
 
@@ -543,28 +553,23 @@ return function(gdkmonitor)
 		gdkmonitor = gdkmonitor,
 		anchor = Anchor.TOP + Anchor.LEFT + Anchor.RIGHT,
 		exclusivity = "EXCLUSIVE",
+		setup = function(self)
+			-- Initialize MenuManager overlay for this monitor
+			MenuManager.init_overlay(gdkmonitor)
+		end,
 		on_destroy = function()
-			if github_window then
-				github_window:destroy()
+			-- Clean up all windows
+			local windows = {
+				github_window, audio_window, network_window, battery_window,
+				display_control_window, sysinfo_window, media_window, power_window
+			}
+			for _, window in ipairs(windows) do
+				if window then
+					window:destroy()
+				end
 			end
-			if audio_window then
-				audio_window:destroy()
-			end
-			if network_window then
-				network_window:destroy()
-			end
-			if battery_window then
-				battery_window:destroy()
-			end
-			if display_control_window then
-				display_control_window:destroy()
-			end
-			if sysinfo_window then
-				sysinfo_window:destroy()
-			end
-			if media_window then
-				media_window:destroy()
-			end
+			-- Clean up MenuManager
+			MenuManager.cleanup()
 		end,
 		Widget.CenterBox({
 			Widget.Box({
@@ -584,6 +589,7 @@ return function(gdkmonitor)
 				SysTray(),
 				AudioControl(gdkmonitor),
 				DisplayControl(gdkmonitor),
+				PowerControl(gdkmonitor),
 				Wifi(gdkmonitor),
 				BatteryLevel(gdkmonitor),
 				Time("%A %d, %H:%M"),

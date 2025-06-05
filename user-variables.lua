@@ -11,7 +11,7 @@ return {
 		},
 	},
 	github = {
-		username = "linuxmobile",
+		username = "SrwR16",
 	},
 	monitor = {
 		mode = "specific", -- Can be "primary", "all", or "specific"
