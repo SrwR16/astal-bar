@@ -22,6 +22,7 @@ local battery_window = nil
 local display_control_window = nil
 local sysinfo_window = nil
 local media_window = nil
+local bluetooth_window = nil
 
 local function SysTray()
 	local tray = Tray.get_default()
@@ -363,6 +364,70 @@ local function DisplayControl(monitor)
 	})
 end
 
+local function BluetoothControl(monitor)
+	local window_visible = Variable(false)
+
+	-- Try to load AstalBluetooth
+	local bluetooth_available = false
+	local Bluetooth = nil
+
+	local success, bluetooth_module = pcall(astal.require, "AstalBluetooth")
+	if success then
+		Bluetooth = bluetooth_module.get_default()
+		bluetooth_available = Bluetooth ~= nil
+	end
+
+	local function toggle_bluetooth_window()
+		if window_visible:get() and bluetooth_window then
+			bluetooth_window:hide()
+			window_visible:set(false)
+		else
+			if not bluetooth_window then
+				local BluetoothControlWindow = require("lua.windows.BluetoothControl")
+				bluetooth_window = BluetoothControlWindow.new(monitor)
+			end
+			if bluetooth_window then
+				bluetooth_window:show_all()
+			end
+			window_visible:set(true)
+		end
+	end
+
+	-- Return nil if Bluetooth is not available to hide the button
+	if not bluetooth_available then
+		return Widget.Box({
+			visible = false,
+		})
+	end
+
+	return Widget.Button({
+		class_name = "bluetooth-button",
+		on_clicked = toggle_bluetooth_window,
+		child = Widget.Icon({
+			icon = bind(Bluetooth, "is-powered"):as(function(powered)
+				return powered and "bluetooth-active-symbolic" or "bluetooth-disabled-symbolic"
+			end),
+			tooltip_text = Variable.derive(
+				{ bind(Bluetooth, "is-powered"), bind(Bluetooth, "is-connected") },
+				function(powered, connected)
+					if not powered then
+						return "Bluetooth is off"
+					elseif connected then
+						return "Bluetooth connected"
+					else
+						return "Bluetooth on, not connected"
+					end
+				end
+			)(),
+		}),
+		setup = function(self)
+			self:hook(self, "destroy", function()
+				window_visible:drop()
+			end)
+		end,
+	})
+end
+
 local function Wifi(monitor)
 	local network = Network.get_default()
 	local window_visible = Variable(false)
@@ -519,6 +584,9 @@ return function(gdkmonitor)
 			if audio_window then
 				audio_window:destroy()
 			end
+			if bluetooth_window then
+				bluetooth_window:destroy()
+			end
 			if network_window then
 				network_window:destroy()
 			end
@@ -533,6 +601,9 @@ return function(gdkmonitor)
 			end
 			if media_window then
 				media_window:destroy()
+			end
+			if bluetooth_window then
+				bluetooth_window:destroy()
 			end
 		end,
 		Widget.CenterBox({
@@ -551,6 +622,7 @@ return function(gdkmonitor)
 				halign = "END",
 				SysTray(),
 				AudioControl(gdkmonitor),
+				BluetoothControl(gdkmonitor),
 				DisplayControl(gdkmonitor),
 				Wifi(gdkmonitor),
 				BatteryLevel(gdkmonitor),

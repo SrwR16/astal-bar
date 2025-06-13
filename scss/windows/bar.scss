@@ -87,6 +87,10 @@
     @include button;
   }
 
+  .bluetooth-button {
+    @include button;
+  }
+
   .battery-button {
     @include button;
   }

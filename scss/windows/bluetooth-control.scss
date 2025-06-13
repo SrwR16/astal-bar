@@ -1,0 +1,221 @@
+@use "../abstracts" as *;
+@use "../components/button" as *;
+@use "sass:color";
+
+window.BluetoothControlWindow {
+  background: transparent;
+
+  > box {
+    background-color: $surface0;
+    border-radius: to-rem(24px);
+    border: to-rem(1px) solid gtkalpha($border, 0.15);
+    min-width: to-rem(350px);
+    margin: to-rem(12px) to-rem(90px);
+
+    .bluetooth-controls-container {
+      background-color: gtkalpha($surface1, 0.5);
+      border-radius: to-rem(20px);
+      padding: to-rem(15px);
+      margin-bottom: to-rem(16px);
+
+      .bluetooth-toggle {
+        margin: to-rem(5px) 0;
+
+        .bluetooth-icon {
+          font-size: to-rem(20px);
+          color: $overlay2;
+          margin-right: to-rem(10px);
+        }
+
+        label {
+          font-weight: 500;
+          font-size: to-rem(14px);
+        }
+
+        .toggle-button {
+          padding: to-rem(6px) to-rem(12px);
+          background-color: gtkalpha($surface1, 0.6);
+          border-radius: to-rem(18px);
+          font-size: to-rem(12px);
+          font-weight: 500;
+
+          &:hover {
+            background-color: gtkalpha($surface2, 0.5);
+          }
+
+          &.enabled {
+            background-color: gtkalpha($blue, 0.2);
+            color: $blue;
+            border: to-rem(1px) solid gtkalpha($blue, 0.3);
+          }
+        }
+      }
+
+      .bluetooth-discovery {
+        margin: to-rem(5px) 0;
+
+        .discovery-button {
+          padding: to-rem(6px) to-rem(12px);
+          background-color: gtkalpha($surface1, 0.6);
+          border-radius: to-rem(18px);
+          font-size: to-rem(12px);
+          font-weight: 500;
+
+          &:hover {
+            background-color: gtkalpha($surface2, 0.5);
+          }
+
+          &.discovering {
+            background-color: gtkalpha($green, 0.2);
+            color: $green;
+            border: to-rem(1px) solid gtkalpha($green, 0.3);
+          }
+        }
+      }
+    }
+
+    .section-header {
+      margin: to-rem(8px) 0;
+
+      label {
+        font-size: to-rem(16px);
+        font-weight: 600;
+        color: $text;
+      }
+    }
+
+    .device-controls {
+      margin-bottom: to-rem(16px);
+
+      .devices-container {
+        background-color: gtkalpha($surface1, 0.5);
+        border-radius: to-rem(20px);
+        padding: to-rem(10px);
+
+        .device-item {
+          padding: to-rem(12px);
+          border-radius: to-rem(16px);
+          background-color: transparent;
+          transition: all 200ms ease;
+          margin-bottom: to-rem(6px);
+          border: to-rem(1px) solid transparent;
+
+          &:hover {
+            background-color: gtkalpha($surface2, 0.5);
+          }
+
+          &.connected {
+            background-color: gtkalpha($blue, 0.15);
+            border: to-rem(1px) solid gtkalpha($blue, 0.3);
+
+            .device-icon {
+              color: $blue;
+            }
+
+            .device-name {
+              color: $blue;
+            }
+          }
+
+          &.paired {
+            background-color: gtkalpha($overlay2, 0.1);
+            border: to-rem(1px) solid gtkalpha($overlay2, 0.2);
+          }
+
+          .device-info {
+            .device-icon {
+              font-size: to-rem(18px);
+              color: $overlay2;
+              margin-right: to-rem(12px);
+            }
+
+            .device-name {
+              font-weight: 500;
+              font-size: to-rem(14px);
+              color: $text;
+              margin-bottom: to-rem(2px);
+            }
+
+            .device-address {
+              font-size: to-rem(12px);
+              color: $subtext0;
+            }
+          }
+
+          .device-actions {
+            .action-button {
+              padding: to-rem(6px) to-rem(10px);
+              border-radius: to-rem(12px);
+              background-color: gtkalpha($surface2, 0.5);
+              font-size: to-rem(12px);
+              font-weight: 500;
+              margin: to-rem(2px);
+              transition: all 200ms ease;
+
+              &:hover {
+                background-color: gtkalpha($surface2, 0.7);
+              }
+
+              &.connect-button {
+                background-color: gtkalpha($green, 0.2);
+                color: $green;
+                border: to-rem(1px) solid gtkalpha($green, 0.3);
+
+                &:hover {
+                  background-color: gtkalpha($green, 0.3);
+                }
+              }
+
+              &.disconnect-button {
+                background-color: gtkalpha($red, 0.2);
+                color: $red;
+                border: to-rem(1px) solid gtkalpha($red, 0.3);
+
+                &:hover {
+                  background-color: gtkalpha($red, 0.3);
+                }
+              }
+
+              &.pair-button {
+                background-color: gtkalpha($yellow, 0.2);
+                color: $yellow;
+                border: to-rem(1px) solid gtkalpha($yellow, 0.3);
+
+                &:hover {
+                  background-color: gtkalpha($yellow, 0.3);
+                }
+              }
+            }
+          }
+        }
+
+        .no-devices {
+          padding: to-rem(20px);
+          color: $subtext0;
+          font-size: to-rem(14px);
+        }
+      }
+    }
+
+    .settings {
+      margin-top: to-rem(10px);
+
+      button {
+        @include button;
+        padding: to-rem(12px);
+        background-color: $overlay2;
+        border-radius: to-rem(20px);
+        font-weight: 500;
+        font-size: to-rem(14px);
+        color: $base;
+        border: none;
+        transition: all 200ms ease;
+
+        &:hover {
+          background-color: gtkalpha($overlay2, 0.8);
+          box-shadow: 0 0 to-rem(2px) to-rem(4px) gtkalpha(black, 0.2);
+        }
+      }
+    }
+  }
+}

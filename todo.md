@@ -4,7 +4,7 @@
 
 ### Bluetooth Module
 
-- [ ] Create a Bluetooth module with additional information
+- [x] Create a Bluetooth module with additional information
   - Device battery levels
   - Connection status
   - Other device details
