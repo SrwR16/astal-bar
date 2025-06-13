@@ -69,10 +69,6 @@
     }
   }
 
-  .github-button {
-    @include button;
-  }
-
   .systray- {
     button {
       @include button;

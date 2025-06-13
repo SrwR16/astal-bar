@@ -16,7 +16,6 @@ local Vitals = require("lua.widgets.Vitals")
 
 local map = require("lua.lib.common").map
 
-local github_window = nil
 local audio_window = nil
 local network_window = nil
 local battery_window = nil
@@ -282,33 +281,6 @@ local function Time(format)
 	})
 end
 
-local function GithubActivity()
-	local window_visible = Variable(false)
-
-	local function toggle_github_window()
-		if window_visible:get() and github_window then
-			github_window:hide()
-			window_visible:set(false)
-		else
-			if not github_window then
-				local GithubWindow = require("lua.windows.Github")
-				github_window = GithubWindow.new()
-			end
-			github_window:show_all()
-			window_visible:set(true)
-		end
-	end
-
-	return Widget.Button({
-		class_name = "github-button",
-		on_clicked = toggle_github_window,
-		child = Widget.Icon({
-			icon = os.getenv("PWD") .. "/icons/github-symbolic.svg",
-			tooltip_text = "GitHub Activity",
-		}),
-	})
-end
-
 local function AudioControl(monitor)
 	local audio = Wp.get_default().audio
 	local speaker = audio and audio.default_speaker
@@ -544,9 +516,6 @@ return function(gdkmonitor)
 		anchor = Anchor.TOP + Anchor.LEFT + Anchor.RIGHT,
 		exclusivity = "EXCLUSIVE",
 		on_destroy = function()
-			if github_window then
-				github_window:destroy()
-			end
 			if audio_window then
 				audio_window:destroy()
 			end
@@ -580,7 +549,6 @@ return function(gdkmonitor)
 			Widget.Box({
 				class_name = "right-box",
 				halign = "END",
-				GithubActivity(),
 				SysTray(),
 				AudioControl(gdkmonitor),
 				DisplayControl(gdkmonitor),
