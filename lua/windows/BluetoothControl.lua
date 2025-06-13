@@ -222,6 +222,7 @@ function BluetoothControlWindow.new(gdkmonitor)
 	cleanup_refs.paired_devices = Variable({})
 	cleanup_refs.discovered_devices = Variable({})
 	cleanup_refs.show_discovery = Variable(false)
+	cleanup_refs.show_paired = Variable(false)
 	cleanup_refs.is_scanning = Variable(false)
 	cleanup_refs.scan_ready = Variable(false)
 
@@ -429,32 +430,122 @@ function BluetoothControlWindow.new(gdkmonitor)
 	end
 
 	local function ConnectedDevicesList()
+		-- Create a derived variable for the paired devices list
+		local paired_devices_list = Variable.derive(
+			{ cleanup_refs.bluetooth_enabled, cleanup_refs.paired_devices },
+			function(enabled, devices)
+				if not enabled then
+					return {
+						Widget.Label({
+							label = "Bluetooth is disabled",
+							xalign = 0.5,
+						}),
+					}
+				end
+
+				if not devices or #devices == 0 then
+					return {
+						Widget.Label({
+							label = "No paired devices",
+							xalign = 0.5,
+						}),
+					}
+				end
+
+				local buttons = {}
+				for _, device in ipairs(devices) do
+					if device and device.paired then
+						table.insert(buttons, BluetoothDevice(device))
+					end
+				end
+
+				if #buttons == 0 then
+					return {
+						Widget.Label({
+							label = "No paired devices",
+							xalign = 0.5,
+						}),
+					}
+				end
+
+				return buttons
+			end
+		)
+
 		return Widget.Box({
 			class_name = "device-controls",
 			orientation = "VERTICAL",
 			spacing = 10,
 			hexpand = true,
-			visible = Variable.derive({ cleanup_refs.bluetooth_enabled, cleanup_refs.paired_devices }, function(enabled, devices)
-				return enabled and devices and #devices > 0
-			end)(),
-			Widget.Box({
-				class_name = "section-header",
-				Widget.Label({
-					label = Variable.derive({ cleanup_refs.bluetooth_connected }, function(connected)
-						return connected and "Connected Devices" or "Paired Devices"
-					end)(),
-					xalign = 0,
-					hexpand = true,
-				}),
-			}),
+			visible = bind(cleanup_refs.bluetooth_enabled),
 			Widget.Box({
 				class_name = "devices-container",
 				orientation = "VERTICAL",
-				spacing = 5,
+				spacing = 8,
 				hexpand = true,
-				bind(cleanup_refs.paired_devices):as(function(devices)
-					return create_device_list(devices, false)
-				end),
+				Widget.Button({
+					class_name = "device-selector",
+					hexpand = true,
+					child = Widget.Box({
+						orientation = "HORIZONTAL",
+						spacing = 10,
+						hexpand = true,
+						Widget.Icon({
+							icon = Variable.derive({ cleanup_refs.bluetooth_connected }, function(connected)
+								return connected and "bluetooth-active-symbolic" or "bluetooth-symbolic"
+							end)(),
+						}),
+						Widget.Box({
+							hexpand = true,
+							Widget.Label({
+								label = Variable.derive({ cleanup_refs.bluetooth_connected, cleanup_refs.paired_devices }, function(connected, devices)
+									if connected then
+										return "Connected Devices"
+									else
+										local count = devices and #devices or 0
+										return count > 0 and string.format("Paired Devices (%d)", count) or "Paired Devices"
+									end
+								end)(),
+								xalign = 0,
+								hexpand = true,
+							}),
+						}),
+						Widget.Icon({
+							icon = "pan-down-symbolic",
+							class_name = Variable.derive({ cleanup_refs.show_paired }, function(shown)
+								return shown and "expanded" or ""
+							end)(),
+						}),
+					}),
+					on_clicked = function()
+						cleanup_refs.show_paired:set(not cleanup_refs.show_paired:get())
+					end,
+				}),
+				Widget.Revealer({
+					transition_duration = 200,
+					transition_type = "SLIDE_DOWN",
+					reveal_child = bind(cleanup_refs.show_paired),
+					hexpand = true,
+					child = Widget.Box({
+						class_name = "paired-devices-list-container",
+						orientation = "VERTICAL",
+						hexpand = true,
+						Widget.Scrollable({
+							vscrollbar_policy = "AUTOMATIC",
+							hscrollbar_policy = "NEVER",
+							class_name = "paired-device-list",
+							hexpand = true,
+							min_content_height = 200,
+							max_content_height = 300,
+							child = Widget.Box({
+								orientation = "VERTICAL",
+								spacing = 5,
+								hexpand = true,
+								bind(paired_devices_list),
+							}),
+						}),
+					}),
+				}),
 			}),
 		})
 	end
@@ -559,7 +650,7 @@ function BluetoothControlWindow.new(gdkmonitor)
 						orientation = "HORIZONTAL",
 						spacing = 10,
 						hexpand = true,
-						Widget.Icon({ 
+						Widget.Icon({
 							icon = "bluetooth-symbolic",
 						}),
 						Widget.Box({
