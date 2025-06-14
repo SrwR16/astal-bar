@@ -97,7 +97,7 @@ local function BluetoothDevice(device)
 			Widget.Box({
 				class_name = "device-actions",
 				orientation = "HORIZONTAL",
-				spacing = 5,
+				spacing = 4,
 				-- Battery level if available
 				bind(device_battery):as(function(battery)
 					if battery and battery > 0 then
@@ -475,7 +475,7 @@ function BluetoothControlWindow.new(gdkmonitor)
 		return Widget.Box({
 			class_name = "device-controls",
 			orientation = "VERTICAL",
-			spacing = 10,
+			spacing = 5,
 			hexpand = true,
 			visible = bind(cleanup_refs.bluetooth_enabled),
 			Widget.Box({
@@ -527,19 +527,17 @@ function BluetoothControlWindow.new(gdkmonitor)
 					reveal_child = bind(cleanup_refs.show_paired),
 					hexpand = true,
 					child = Widget.Box({
-						class_name = "paired-devices-list-container",
+						class_name = "devices-list-container",
 						orientation = "VERTICAL",
 						hexpand = true,
 						Widget.Scrollable({
 							vscrollbar_policy = "AUTOMATIC",
 							hscrollbar_policy = "NEVER",
-							class_name = "paired-device-list",
+							class_name = "device-list",
 							hexpand = true,
-							min_content_height = 200,
-							max_content_height = 300,
 							child = Widget.Box({
 								orientation = "VERTICAL",
-								spacing = 5,
+								spacing = 4,
 								hexpand = true,
 								bind(paired_devices_list),
 							}),
