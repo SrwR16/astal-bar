@@ -43,16 +43,41 @@ local function BluetoothDevice(device)
 		end)
 	end
 
+	-- Create derived variable for pair button
+	local pair_button_widget = Variable.derive({ device_paired }, function(paired)
+		if not device then
+			return Widget.Box({})
+		end
+		if not paired then
+			return Widget.Button({
+				class_name = "action-button pair-button",
+				label = "Pair",
+				on_clicked = function()
+					pcall(function()
+						device:pair()
+					end)
+				end,
+			})
+		end
+		return Widget.Box({})
+	end)
+
+	-- Create derived variable for class name
+	local class_name_var = Variable.derive({ device_connected, device_paired }, function(connected, paired)
+		if not device then
+			return "device-item"
+		end
+		local classes = "device-item"
+		if connected then
+			classes = classes .. " connected"
+		elseif paired then
+			classes = classes .. " paired"
+		end
+		return classes
+	end)
+
 	return Widget.Button({
-		class_name = Variable.derive({ device_connected, device_paired }, function(connected, paired)
-			local classes = "device-item"
-			if connected then
-				classes = classes .. " connected"
-			elseif paired then
-				classes = classes .. " paired"
-			end
-			return classes
-		end)(),
+		class_name = bind(class_name_var),
 		hexpand = true,
 		on_clicked = function()
 			-- Don't handle connection in the main button click
@@ -133,27 +158,26 @@ local function BluetoothDevice(device)
 					end,
 				}),
 				-- Add pair button for unpaired devices
-				Variable.derive({ device_paired }, function(paired)
-					if not paired then
-						return Widget.Button({
-							class_name = "action-button pair-button",
-							label = "Pair",
-							on_clicked = function()
-								pcall(function()
-									device:pair()
-								end)
-							end,
-						})
-					end
-					return Widget.Box({})
-				end)(),
+				bind(pair_button_widget),
 			}),
 		}),
 		setup = function(self)
 			self:hook(self, "destroy", function()
-				device_connected:drop()
-				device_paired:drop()
-				device_battery:drop()
+				pcall(function()
+					device_connected:drop()
+				end)
+				pcall(function()
+					device_paired:drop()
+				end)
+				pcall(function()
+					device_battery:drop()
+				end)
+				pcall(function()
+					pair_button_widget:drop()
+				end)
+				pcall(function()
+					class_name_var:drop()
+				end)
 			end)
 		end,
 	})
@@ -356,6 +380,24 @@ function BluetoothControlWindow.new(gdkmonitor)
 	end)
 
 	local function BluetoothToggle()
+		-- Create derived variables for toggle button
+		local toggle_class_var = Variable.derive({ cleanup_refs.bluetooth_enabled }, function(enabled)
+			if is_destroyed or not cleanup_refs then
+				return "toggle-button"
+			end
+			return enabled and "toggle-button enabled" or "toggle-button"
+		end)
+		local toggle_label_var = Variable.derive({ cleanup_refs.bluetooth_enabled }, function(enabled)
+			if is_destroyed or not cleanup_refs then
+				return "Off"
+			end
+			return enabled and "On" or "Off"
+		end)
+
+		-- Store these variables for cleanup
+		cleanup_refs.toggle_class_var = toggle_class_var
+		cleanup_refs.toggle_label_var = toggle_label_var
+
 		return Widget.Box({
 			class_name = "bluetooth-toggle",
 			orientation = "HORIZONTAL",
@@ -373,9 +415,7 @@ function BluetoothControlWindow.new(gdkmonitor)
 				hexpand = true,
 			}),
 			Widget.Button({
-				class_name = Variable.derive({ cleanup_refs.bluetooth_enabled }, function(enabled)
-					return enabled and "toggle-button enabled" or "toggle-button"
-				end)(),
+				class_name = bind(toggle_class_var),
 				on_clicked = function()
 					if Bluetooth then
 						local current_state = cleanup_refs.bluetooth_enabled:get()
@@ -415,15 +455,15 @@ function BluetoothControlWindow.new(gdkmonitor)
 
 						-- Force update after a short delay
 						GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1000, function()
-							update_bluetooth_state()
+							if not is_destroyed then
+								update_bluetooth_state()
+							end
 							return false
 						end)
 					end
 				end,
 				child = Widget.Label({
-					label = Variable.derive({ cleanup_refs.bluetooth_enabled }, function(enabled)
-						return enabled and "On" or "Off"
-					end)(),
+					label = bind(toggle_label_var),
 				}),
 			}),
 		})
@@ -434,6 +474,10 @@ function BluetoothControlWindow.new(gdkmonitor)
 		local paired_devices_list = Variable.derive(
 			{ cleanup_refs.bluetooth_enabled, cleanup_refs.paired_devices },
 			function(enabled, devices)
+				if is_destroyed or not cleanup_refs then
+					return {}
+				end
+
 				if not enabled then
 					return {
 						Widget.Label({
@@ -471,6 +515,9 @@ function BluetoothControlWindow.new(gdkmonitor)
 				return buttons
 			end
 		)
+
+		-- Store for cleanup
+		cleanup_refs.paired_devices_list = paired_devices_list
 
 		return Widget.Box({
 			class_name = "device-controls",
@@ -582,6 +629,10 @@ function BluetoothControlWindow.new(gdkmonitor)
 		local devices_list = Variable.derive(
 			{ cleanup_refs.bluetooth_enabled, cleanup_refs.scan_ready, cleanup_refs.discovered_devices, cleanup_refs.is_scanning },
 			function(enabled, ready, devices, scanning)
+				if is_destroyed or not cleanup_refs then
+					return {}
+				end
+
 				if not enabled then
 					return {
 						Widget.Label({
@@ -629,6 +680,9 @@ function BluetoothControlWindow.new(gdkmonitor)
 				return buttons
 			end
 		)
+
+		-- Store for cleanup
+		cleanup_refs.devices_list = devices_list
 
 		return Widget.Box({
 			class_name = "device-controls",
@@ -742,23 +796,30 @@ function BluetoothControlWindow.new(gdkmonitor)
 				end
 				is_destroyed = true
 
-				if cleanup_refs.update_timer then
-					GLib.source_remove(cleanup_refs.update_timer)
-					cleanup_refs.update_timer = nil
-				end
-
-				if cleanup_refs.scan_timer then
-					GLib.source_remove(cleanup_refs.scan_timer)
-					cleanup_refs.scan_timer = nil
-				end
-
-				for _, ref in pairs(cleanup_refs) do
-					if type(ref) == "table" and ref.drop then
-						ref:drop()
+				if cleanup_refs then
+					if cleanup_refs.update_timer then
+						GLib.source_remove(cleanup_refs.update_timer)
+						cleanup_refs.update_timer = nil
 					end
+
+					if cleanup_refs.scan_timer then
+						GLib.source_remove(cleanup_refs.scan_timer)
+						cleanup_refs.scan_timer = nil
+					end
+
+					-- Drop all variables properly
+					for key, ref in pairs(cleanup_refs) do
+						if type(ref) == "table" and ref.drop then
+							pcall(function()
+								ref:drop()
+							end)
+						end
+						cleanup_refs[key] = nil
+					end
+
+					cleanup_refs = nil
 				end
 
-				cleanup_refs = nil
 				collectgarbage("collect")
 			end)
 		end,
